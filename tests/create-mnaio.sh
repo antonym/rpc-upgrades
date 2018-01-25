@@ -60,9 +60,10 @@ export MNAIO_SSH="ssh -ttt -oStrictHostKeyChecking=no root@infra1"
 
 # checkout openstack-ansible-ops
 if [ ! -d "/opt/openstack-ansible-ops" ]; then
-  git clone --recursive https://github.com/openstack/openstack-ansible-ops /opt/openstack-ansible-ops
+  git clone --recursive https://github.com/antonym/openstack-ansible-ops /opt/openstack-ansible-ops
 else
   pushd /opt/openstack-ansible-ops
+    git checkout ipxe_support
     git fetch --all
   popd
 fi
