@@ -2,15 +2,38 @@
 # Variable to use for preparation
 #
 
-# the base URL to download image artifacts from
+# the base URLs to download image artifacts from
+export RPC_RELEASE="${RE_JOB_CONTEXT:-}"
+export RPCU_ARTIFACT_URL="https://ed2cc5ce4ea792952a06-5946b1c04934c7963c5365082354649f.ssl.cf5.rackcdn.com"
+export RPCU_IMAGE_MANIFEST_URL="${RPCU_ARTIFACT_URL}/${RPC_RELEASE}-${RE_JOB_IMAGE}_mnaio-${RE_JOB_SCENARIO}/manifest.json"
 export RPCO_ARTIFACT_URL="https://a5ce27333a8948d82738-b28e2b85e22a27f072118ea786afca3a.ssl.cf5.rackcdn.com"
-export RPCO_IMAGE_MANIFEST_URL="${RPCO_ARTIFACT_URL}/${RPC_RELEASE}-${RE_JOB_IMAGE}-${RE_JOB_SCENARIO}/manifest.json"
+export RPCO_IMAGE_MANIFEST_URL="${RPCO_ARTIFACT_URL}/${RPC_RELEASE}-${RE_JOB_IMAGE}_mnaio-${RE_JOB_SCENARIO}/manifest.json"
 
-# Check whether there is a manifest file available
-if curl --fail --silent --show-error --retry 5 --output /dev/null ${RPCO_IMAGE_MANIFEST_URL}; then
+echo ${RPCU_IMAGE_MANIFEST_URL}
+echo ${RPCO_IMAGE_MANIFEST_URL}
+
+if curl --output /dev/null --silent --head --fail "${RPCU_IMAGE_MANIFEST_URL}"; then
   export RPCO_IMAGES_AVAILABLE="true"
+  export DEPLOY_VMS="false"
+  export IMAGE_MANIFEST_URL=${RPCU_IMAGE_MANIFEST_URL}
+elif curl --output /dev/null --silent --head --fail "${RPCO_IMAGE_MANIFEST_URL}"; then
+  export RPCO_IMAGES_AVAILABLE="true"
+  export DEPLOY_VMS="false"
+  export IMAGE_MANIFEST_URL=${RPCO_IMAGE_MANIFEST_URL}
 else
-  export RPCO_IMAGES_AVAILABLE="false"
+  echo "Requested RE_JOB_SERIES not found for ${RE_JOB_CONTEXT}, falling back to latest available."
+  # normally would fail and exit here, but we'll need to build up library of snapshots
+  # exit 1
+  if [ "${RE_JOB_SERIES}" == "pike" ]; then
+    export IMAGE_MANIFEST_URL="${RPCO_ARTIFACT_URL}/r16.2.5-xenial_mnaio_no_artifacts-swift/manifest.json"
+    export DEPLOY_VMS="false"
+  elif [ "${RE_JOB_SERIES}" == "newton" ]; then
+    export IMAGE_MANIFEST_URL="${RPCO_ARTIFACT_URL}/r14.18.0-xenial_mnaio_loose_artifacts-swift/manifest.json"
+    export DEPLOY_VMS="false"
+  else
+    export RPCO_IMAGES_AVAILABLE="false"
+  fi
+  echo "IMAGE_MANIFEST_URL set to ${IMAGE_MANIFEST_URL}."
 fi
 
 #
